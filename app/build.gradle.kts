@@ -35,7 +35,11 @@ android {
         }
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
-    kotlinOptions { jvmTarget = "17" }
+    kotlinOptions {
+        jvmTarget = "17"
+        // LiteRT 2.3.2 ships Kotlin 2.4 metadata; our compiler (2.0.21) only reads up to 2.1.
+        freeCompilerArgs += "-Xskip-metadata-version-check"
+    }
     buildFeatures { compose = true; buildConfig = true }
     androidResources { generateLocaleConfig = true }
     packaging {

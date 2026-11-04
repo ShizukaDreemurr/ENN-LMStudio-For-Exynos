@@ -2,7 +2,7 @@ package dev.exynoslm.runtime.cpu
 
 /**
  * Thread budget for CPU inference. Exynos 2600 has a 10-core 1+3+6 style cluster layout (exact topology: verify on device
- * via /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq). Using only the big/prime cores avoids
+ * via /sys/devices/system/cpu/cpuN/cpufreq/cpuinfo_max_freq). Using only the big/prime cores avoids
  * thrashing little cores and leaves headroom for UI; background agent runs use fewer threads.
  */
 object CpuTuning {
