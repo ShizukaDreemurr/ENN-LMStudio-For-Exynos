@@ -17,3 +17,10 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.ksp) apply false
 }
+
+// LiteRT 2.3.2 ships Kotlin 2.4 metadata; Kotlin 2.0.21 can read up to 2.1. Applies to every module touching LiteRT.
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions.freeCompilerArgs.add("-Xskip-metadata-version-check")
+    }
+}
