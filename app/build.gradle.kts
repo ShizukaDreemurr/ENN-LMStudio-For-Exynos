@@ -28,7 +28,15 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
     androidResources { generateLocaleConfig = true }
-    packaging { jniLibs { useLegacyPackaging = false } }
+    packaging {
+        jniLibs {
+            // Must be extracted: Environment.Option.DispatchLibraryDir points at applicationInfo.nativeLibraryDir.
+            useLegacyPackaging = true
+            // Self-built libLiteRt.so (abseil exports) vs. the one in the Maven AAR. Which copy wins is UNVERIFIED:
+            // check with `unzip -l app-debug.apk | grep libLiteRt` and compare sizes with runtime-enn/jniLibs.
+            pickFirsts += "**/libLiteRt.so"
+        }
+    }
 }
 
 dependencies {

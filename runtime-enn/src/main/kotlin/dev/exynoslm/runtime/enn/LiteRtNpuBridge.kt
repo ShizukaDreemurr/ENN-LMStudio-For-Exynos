@@ -1,6 +1,10 @@
 package dev.exynoslm.runtime.enn
 
 import android.content.Context
+import com.google.ai.edge.litert.Accelerator
+import com.google.ai.edge.litert.CompiledModel
+import com.google.ai.edge.litert.Environment
+import com.google.ai.edge.litert.TensorBuffer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -10,126 +14,118 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Real NPU path on Exynos, as validated on SM-S947B (Galaxy S26+):
+ * Exynos NPU via LiteRT 2.3.2 + Samsung dispatch. Call shapes mirror the reference app that runs on SM-S947B
+ * (repo exynos-xclipse-afmf-enn: NpuEnv.kt:41-80, SrBackend.kt:39-89), which builds in CI.
  *
- *   App ─► LiteRT 2.3.2 CompiledModel(Accelerator.NPU)
- *        ─► libLiteRtDispatch_Samsung.so (self-built from LiteRT tag v2.3.2, packaged in APK)
- *        ─► libenn_public_api_cpp.so (system lib on the device, NOT packaged; dlopen'ed by the dispatch)
+ *   CompiledModel(Accelerator.NPU) ─► libLiteRtDispatch_Samsung.so (APK, self-built v2.3.2)
+ *                                  ─► libenn_public_api_cpp.so      (system, dlopen'ed)
  *
- * We do NOT call ENN directly. Source reviewed: google-ai-edge/litert @ b6b64443 (2026-11-01),
- * litert/vendors/samsung/dispatch/{enn_manager.*, litert_dispatch_*_context.cc}.
- *
- * LiteRT 2.x Kotlin API is accessed via reflection on purpose: the exact Kotlin signatures were not verified
- * against published docs, and reflection means a mismatch degrades to isAvailable()=false instead of a build break.
- * Names used (VERIFY against your SrBackend.kt / NpuEnv.kt): Environment.create(), getAvailableAccelerators(),
- * Accelerator.NPU, CompiledModel.Options(Accelerator), CompiledModel.create(path, options, env),
- * createInputBuffers(), createOutputBuffers(), run(List,List), TensorBuffer.writeInt8/readInt8, close().
- *
- * Data path is COPY-based (ByteBuffer -> TensorBuffer.writeInt8). The dispatch only accepts DMA-BUF buffers
- * internally; zero-copy (dmabuf fd / AHardwareBuffer) is not implemented. Copy cost dominates NPU time for large I/O.
+ * Only writeInt8/readInt8 stay reflective: the reference app probes them at runtime ("API not stably public").
  */
-class LiteRtNpuBridge(private val context: Context) : EnnBridge {
+class LiteRtNpuBridge(
+    private val context: Context,
+    /** Options(NPU, GPU): let LiteRT place unsupported ops on GPU instead of failing. */
+    private val withGpuFallback: Boolean = false,
+) : EnnBridge {
 
-    /** Tensor specs: ENN's EnnGetBuffersInfo only returns COUNTS, so specs come from a sidecar written by the AOT script. */
+    /** Written by the AOT step (`io_sidecar.py`) next to `<name>.e9965.tflite` as `<name>.e9965.io.json`. */
     @Serializable
     data class IoSidecar(val inputs: List<Spec>, val outputs: List<Spec>) {
-        @Serializable data class Spec(val name: String, val shape: List<Int>, val dtype: String)
+        @Serializable data class Spec(val name: String, val shape: List<Int>, val dtype: String, val scale: Float? = null, val zero_point: Int? = null)
     }
 
-    private class Loaded(val model: Any, val inputs: List<Any>, val outputs: List<Any>, val io: IoSidecar)
+    private class Loaded(val model: CompiledModel, val inputs: List<TensorBuffer>, val outputs: List<TensorBuffer>, val io: IoSidecar)
 
     private val json = Json { ignoreUnknownKeys = true }
     private val models = ConcurrentHashMap<Long, Loaded>()
     private val ids = AtomicLong(1)
-    private val env: Any? by lazy { runCatching { createEnvironment() }.getOrNull() }
     @Volatile private var lastError: String? = null
 
+    /** Same fallback chain as NpuEnv strategies A–E: dispatch dir, dispatch+compiler-plugin dir, plain context. */
+    private val env: Environment? by lazy {
+        val dir = context.applicationInfo.nativeLibraryDir
+        val attempts: List<() -> Environment> = listOf(
+            { Environment.create(context, mapOf(Environment.Option.DispatchLibraryDir to dir)) },
+            { Environment.create(context, mapOf(Environment.Option.DispatchLibraryDir to dir, Environment.Option.CompilerPluginLibraryDir to dir)) },
+            { Environment.create(context) },
+        )
+        for (a in attempts) runCatching(a).onSuccess { return@lazy it }.onFailure { lastError = "Environment.create: ${it.message}" }
+        null
+    }
+
     override fun isAvailable(): Boolean = runCatching {
-        val e = env ?: error("LiteRT Environment unavailable (LiteRT 2.x not on classpath?)")
-        val accs = call(e, "getAvailableAccelerators").toString()
-        accs.contains("NPU").also { if (!it) lastError = "no NPU accelerator (got $accs)" }
+        val e = env ?: return false
+        val accs = e.getAvailableAccelerators().joinToString { it.toString() }
+        ("NPU" in accs).also { if (!it) lastError = "no NPU accelerator (available: $accs)" }
     }.getOrElse { lastError = it.message; false }
 
-    override fun describe() = "LiteRT 2.3.2 + Samsung dispatch (AOT target E9965)" + (lastError?.let { " — $it" } ?: "")
+    override fun describe() = "LiteRT 2.3.2 + Samsung dispatch (AOT E9965)" + (lastError?.let { " — $it" } ?: "")
 
-    override fun openModel(path: String): EnnBridge.ModelHandle = synchronized(NPU_LOCK) {
+    override fun openModel(path: String): EnnBridge.ModelHandle {
+        val e = env ?: error(describe())
         val io = sidecarFor(path)
-        val accel = Class.forName("$PKG.Accelerator").getMethod("valueOf", String::class.java).invoke(null, "NPU")
-        val optsCls = Class.forName("$PKG.CompiledModel\$Options")
-        val opts = optsCls.constructors.first { it.parameterCount == 1 }.let { c ->
-            // Options(vararg Accelerator) compiles to an array param in some versions.
-            if (c.parameterTypes[0].isArray) c.newInstance(java.lang.reflect.Array.newInstance(accel.javaClass, 1).also { java.lang.reflect.Array.set(it, 0, accel) })
-            else c.newInstance(accel)
-        }
-        val model = invokeFactory(Class.forName("$PKG.CompiledModel"), "create", path, opts, env)
-        val loaded = Loaded(model, call(model, "createInputBuffers") as List<Any>, call(model, "createOutputBuffers") as List<Any>, io)
+        val opts = if (withGpuFallback) CompiledModel.Options(Accelerator.NPU, Accelerator.GPU) else CompiledModel.Options(Accelerator.NPU)
+        val model = CompiledModel.create(path, opts, e)
+        val loaded = Loaded(model, model.createInputBuffers(), model.createOutputBuffers(), io)
+        require(loaded.inputs.size == io.inputs.size && loaded.outputs.size == io.outputs.size) { "sidecar I/O count does not match model" }
+        if (io.inputs.any { it.dtype == "int8" }) requireNotNull(writeI8(loaded.inputs[0])) { "TensorBuffer.writeInt8 not found in this LiteRT build" }
         val id = ids.getAndIncrement(); models[id] = loaded
-        EnnBridge.ModelHandle(id)
+        return EnnBridge.ModelHandle(id)
     }
 
     override fun inputSpecs(h: EnnBridge.ModelHandle) = models.getValue(h.id).io.inputs.map(::toSpec)
     override fun outputSpecs(h: EnnBridge.ModelHandle) = models.getValue(h.id).io.outputs.map(::toSpec)
 
+    /** Buffers carry raw tensor bytes in the model's layout (sr_x2: NCHW int8). Quantize with dev.exynoslm.runtime.Quant first. */
     override fun execute(h: EnnBridge.ModelHandle, inputs: List<ByteBuffer>, outputs: List<ByteBuffer>) {
         val m = models.getValue(h.id)
         require(inputs.size == m.inputs.size && outputs.size == m.outputs.size) { "I/O count mismatch" }
-        // Global lock: ENN thread constraints are unverified; the reference app serialises every run.
-        synchronized(NPU_LOCK) {
-            inputs.forEachIndexed { i, b -> call(m.inputs[i], "writeInt8", b.toByteArray()) } // INT8 graphs only for now
-            call(m.model, "run", m.inputs, m.outputs)
+        synchronized(NPU_LOCK) { // reference app serialises every run; multi-thread rules are unverified
+            inputs.forEachIndexed { i, b ->
+                if (m.io.inputs[i].dtype == "int8") writeI8(m.inputs[i])!!.invoke(m.inputs[i], b.toByteArray())
+                else m.inputs[i].writeFloat(b.toFloatArray())
+            }
+            m.model.run(m.inputs, m.outputs)
             outputs.forEachIndexed { i, o ->
-                val bytes = call(m.outputs[i], "readInt8") as ByteArray
-                o.clear(); o.put(bytes, 0, minOf(bytes.size, o.capacity())); o.flip()
+                o.clear()
+                if (m.io.outputs[i].dtype == "int8") (readI8(m.outputs[i])!!.invoke(m.outputs[i]) as ByteArray).let { o.put(it, 0, minOf(it.size, o.capacity())) }
+                else m.outputs[i].readFloat().forEach { if (o.remaining() >= 4) o.putFloat(it) }
+                o.flip()
             }
         }
     }
 
+    /** Close order as in SrBackend.kt:83-89: inputs, outputs, model. Environment lives for the bridge lifetime. */
     override fun close(h: EnnBridge.ModelHandle) {
         val m = models.remove(h.id) ?: return
-        synchronized(NPU_LOCK) { (m.inputs + m.outputs).forEach { runCatching { call(it, "close") } }; runCatching { call(m.model, "close") } }
+        synchronized(NPU_LOCK) {
+            m.inputs.forEach { runCatching { it.close() } }
+            m.outputs.forEach { runCatching { it.close() } }
+            runCatching { m.model.close() }
+        }
     }
 
     // ---- helpers ----
 
     private fun sidecarFor(path: String): IoSidecar {
         val f = File(path.removeSuffix(".tflite") + ".io.json")
-        require(f.exists()) { "missing I/O sidecar ${f.name} (generate it in the AOT compile step)" }
+        require(f.exists()) { "missing I/O sidecar ${f.name} (generate with io_sidecar.py in the AOT step)" }
         return json.decodeFromString(IoSidecar.serializer(), f.readText())
     }
 
     private fun toSpec(s: IoSidecar.Spec): EnnBridge.TensorSpec {
         val elem = when (s.dtype.lowercase()) { "int8", "uint8" -> 1; "int16", "float16" -> 2; else -> 4 }
-        return EnnBridge.TensorSpec(s.name, s.shape.toIntArray(), s.dtype, s.shape.fold(1) { a, b -> a * b } * elem)
+        return EnnBridge.TensorSpec(s.name, s.shape.toIntArray(), s.dtype, s.shape.fold(1) { a, b -> a * b } * elem, s.scale, s.zero_point)
     }
+
+    private fun writeI8(b: TensorBuffer): Method? = b.javaClass.methods.firstOrNull { it.name == "writeInt8" && it.parameterTypes.contentEquals(arrayOf(ByteArray::class.java)) }
+    private fun readI8(b: TensorBuffer): Method? = b.javaClass.methods.firstOrNull { it.name == "readInt8" && it.parameterTypes.isEmpty() }
 
     private fun ByteBuffer.toByteArray(): ByteArray { val d = duplicate().apply { rewind() }; return ByteArray(d.remaining()).also { d.get(it) } }
-
-    private fun createEnvironment(): Any {
-        val cls = Class.forName("$PKG.Environment")
-        cls.methods.firstOrNull { it.name == "create" && it.parameterCount == 0 && java.lang.reflect.Modifier.isStatic(it.modifiers) }?.let { return it.invoke(null)!! }
-        val companion = cls.getField("Companion").get(null)
-        // Kotlin default args: prefer zero-arg; otherwise the "$default" synthetic isn't reachable here, so fail loudly.
-        return companion.javaClass.methods.first { it.name == "create" && it.parameterCount == 0 }.invoke(companion)!!
-    }
-
-    /** Finds a static or companion `create(String path, Options, Environment?)`-shaped factory. */
-    private fun invokeFactory(cls: Class<*>, name: String, path: String, opts: Any, env: Any?): Any {
-        val targets: List<Pair<Any?, Method>> = cls.methods.filter { java.lang.reflect.Modifier.isStatic(it.modifiers) }.map { null to it } +
-            runCatching { cls.getField("Companion").get(null) }.getOrNull()?.let { c -> c.javaClass.methods.map { c to it } }.orEmpty()
-        for ((recv, m) in targets.filter { it.second.name == name && it.second.parameterTypes.firstOrNull() == String::class.java }) {
-            val args: Array<Any?> = when (m.parameterCount) { 2 -> arrayOf(path, opts); 3 -> arrayOf(path, opts, env); else -> continue }
-            if (runCatching { m.parameterTypes.zip(args).all { (t, a) -> a == null || t.isInstance(a) } }.getOrDefault(false))
-                return m.invoke(recv, *args)!!
-        }
-        error("CompiledModel.create(String, Options[, Environment]) not found — check LiteRT version")
-    }
-
-    private fun call(target: Any, name: String, vararg args: Any?): Any? =
-        target.javaClass.methods.first { it.name == name && it.parameterCount == args.size }.invoke(target, *args)
+    private fun ByteBuffer.toFloatArray(): FloatArray { val d = duplicate().apply { rewind() }.asFloatBuffer(); return FloatArray(d.remaining()).also { d.get(it) } }
 
     companion object {
-        private const val PKG = "com.google.ai.edge.litert"
-        /** One NPU job at a time, process-wide (mirrors NpuEnv.npuLock in the reference app). */
+        /** One NPU job at a time, process-wide (mirrors NpuEnv.npuLock). */
         val NPU_LOCK = Any()
     }
 }

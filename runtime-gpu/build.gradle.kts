@@ -12,7 +12,7 @@ android {
 }
 dependencies {
     api(project(":runtime-cpu"))
-    // LiteRT GPU delegate for non-LLM graphs (vision/embedding .tflite).
+    // LiteRT 2.x GPU accelerator for non-LLM graphs (vision/embedding .tflite).
     implementation(libs.litert)
     implementation(libs.litert.gpu)
 }

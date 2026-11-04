@@ -22,7 +22,11 @@ interface EnnBridge {
     fun close(h: ModelHandle)
 
     @JvmInline value class ModelHandle(val id: Long)
-    data class TensorSpec(val name: String, val shape: IntArray, val dtype: String, val byteSize: Int)
+    /** [scale]/[zeroPoint] are set for quantized tensors; the app quantizes/dequantizes itself (see dev.exynoslm.runtime.Quant). */
+    data class TensorSpec(
+        val name: String, val shape: IntArray, val dtype: String, val byteSize: Int,
+        val scale: Float? = null, val zeroPoint: Int? = null,
+    )
 }
 
 /** Default implementation used when the SDK is absent or `enn.enabled=false`. Always reports unavailable. */
