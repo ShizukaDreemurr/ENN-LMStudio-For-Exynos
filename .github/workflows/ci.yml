@@ -20,7 +20,10 @@ jobs:
       # ubuntu-latest ships the Android SDK at $ANDROID_HOME; setup-android@v3 currently fails on 'tools'.
       - run: echo "sdk.dir=$ANDROID_HOME" > local.properties
       - name: Build APK (shared key -> installs over previous builds)
-        run: ./gradlew :app:assembleDebug -PbuildNumber=${{ github.run_number }} --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleDebug -PbuildNumber=${{ github.run_number }} --continue 2>&1 | tee build.log || {
+            echo "::group::COMPILE ERRORS"; grep -E "^e: |error:|What went wrong" -A2 build.log | head -150; echo "::endgroup::"; exit 1; }
       - name: Show native libs in APK
         run: unzip -l app/build/outputs/apk/debug/*.apk | grep -E "\.so$" || true
       - uses: actions/upload-artifact@v4
