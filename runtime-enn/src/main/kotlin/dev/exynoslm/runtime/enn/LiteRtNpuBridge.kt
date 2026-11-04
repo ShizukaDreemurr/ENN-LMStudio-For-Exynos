@@ -81,19 +81,30 @@ class LiteRtNpuBridge(
         val m = models.getValue(h.id)
         require(inputs.size == m.inputs.size && outputs.size == m.outputs.size) { "I/O count mismatch" }
         synchronized(NPU_LOCK) { // reference app serialises every run; multi-thread rules are unverified
+            val t0 = System.nanoTime()
             inputs.forEachIndexed { i, b ->
                 if (m.io.inputs[i].dtype == "int8") writeI8(m.inputs[i])!!.invoke(m.inputs[i], b.toByteArray())
                 else m.inputs[i].writeFloat(b.toFloatArray())
             }
+            val t1 = System.nanoTime()
             m.model.run(m.inputs, m.outputs)
+            val t2 = System.nanoTime()
             outputs.forEachIndexed { i, o ->
                 o.clear()
                 if (m.io.outputs[i].dtype == "int8") (readI8(m.outputs[i])!!.invoke(m.outputs[i]) as ByteArray).let { o.put(it, 0, minOf(it.size, o.capacity())) }
                 else m.outputs[i].readFloat().forEach { if (o.remaining() >= 4) o.putFloat(it) }
                 o.flip()
             }
+            lastTiming = Timing((t1 - t0) / 1e6, (t2 - t1) / 1e6, (System.nanoTime() - t2) / 1e6)
         }
     }
+
+    data class Timing(val copyInMs: Double, val runMs: Double, val copyOutMs: Double)
+    @Volatile var lastTiming: Timing? = null; private set
+
+    /** Raw accelerator list for diagnostics. */
+    fun availableAccelerators(): String = runCatching { env?.getAvailableAccelerators()?.joinToString { it.toString() } ?: "env=null" }
+        .getOrElse { "error: ${it.message}" }
 
     /** Close order as in SrBackend.kt:83-89: inputs, outputs, model. Environment lives for the bridge lifetime. */
     override fun close(h: EnnBridge.ModelHandle) {

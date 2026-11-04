@@ -1,6 +1,7 @@
 package dev.exynoslm.app.ui.bench
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -34,7 +35,30 @@ class BenchViewModel @Inject constructor(
     private val hub: InferenceHub,
     private val monitor: DeviceMonitor,
     private val db: AppDatabase,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val ctx: android.content.Context,
+    private val store: dev.exynoslm.storage.ModelStore,
 ) : ViewModel() {
+    private val report = DeviceReport(ctx, (engines[Backend.NPU_ENN] as dev.exynoslm.runtime.enn.EnnEngine).bridge, monitor)
+    val reportText = MutableStateFlow("")
+
+    /** Device info + NPU bench + saved LLM benchmarks, as one copyable text. */
+    fun measureDevice() = viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+        running.value = true
+        reportText.value = "Đang đo…"
+        val npuModel = store.list().firstOrNull { it.format == dev.exynoslm.model.ModelFormat.ENN_COMPILED }
+        val text = buildString {
+            append(runCatching { report.basic() }.getOrElse { "basic FAILED: $it\n" })
+            append(runCatching { report.npuBench(npuModel) }.getOrElse { "npu FAILED: $it\n" })
+            append("--- LLM benchmarks (saved) ---\n")
+            results.value.take(12).forEach { r ->
+                append("${r.backend} ${r.modelId.substringAfter(':')} load=${r.loadMs}ms ttft=${r.ttftMs}ms prefill=%.0f decode=%.1f tok/s pss=${r.peakPssMb}MB bat=-${r.batteryDropPct}%%\n"
+                    .format(r.prefillTokPerSec, r.decodeTokPerSec))
+            }
+            if (results.value.isEmpty()) append("(none — load a .task model and press Run NPU / GPU / CPU)\n")
+        }
+        reportText.value = text
+        running.value = false
+    }
     val results = db.benchmarks().all().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val log = MutableStateFlow<List<String>>(emptyList())
     val running = MutableStateFlow(false)
@@ -81,7 +105,23 @@ fun BenchScreen(vm: BenchViewModel = hiltViewModel()) {
     val results by vm.results.collectAsStateWithLifecycle()
     val log by vm.log.collectAsStateWithLifecycle()
     val running by vm.running.collectAsStateWithLifecycle()
+    val report by vm.reportText.collectAsStateWithLifecycle()
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    var copied by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().padding(8.dp)) {
+        Text("Đo máy thật / Device report", style = MaterialTheme.typography.titleSmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Button({ copied = false; vm.measureDevice() }, enabled = !running) { Text("Đo máy") }
+            OutlinedButton({ clipboard.setText(androidx.compose.ui.text.AnnotatedString(report)); copied = true }, enabled = report.isNotBlank() && !running) {
+                Text(if (copied) "Đã copy ✓" else "Copy báo cáo")
+            }
+        }
+        if (report.isNotBlank()) Surface(tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp)) {
+            Text(report, Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(6.dp),
+                style = MaterialTheme.typography.bodySmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+        }
+        HorizontalDivider(Modifier.padding(vertical = 6.dp))
+        Text("LLM benchmark", style = MaterialTheme.typography.titleSmall)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Button({ vm.run() }, enabled = !running) { Text("Run NPU / GPU / CPU") }
             if (running) OutlinedButton({ vm.stop() }) { Text("Stop") }

@@ -47,7 +47,11 @@ class MyModelsViewModel @Inject constructor(private val store: ModelStore, val h
         if (hub.active.value.model?.id == m.id) hub.unloadAll()
         store.delete(m); refresh()
     }
-    fun import(uri: Uri) = viewModelScope.launch { runCatching { store.import(uri) }.onFailure { status.value = it.message }; refresh() }
+    fun import(uris: List<Uri>) = viewModelScope.launch {
+        uris.forEach { u -> runCatching { store.import(u) }.onFailure { status.value = it.message } }
+        status.value = "Imported ${uris.size} file(s). NPU models need <name>.e9965.tflite + <name>.e9965.io.json."
+        refresh()
+    }
     fun verify(m: LoadedModel) = viewModelScope.launch {
         status.value = "Hashing ${m.displayName}…"
         val sha = withContext(Dispatchers.IO) { ModelDownloader.sha256(File(m.localPath)) }
@@ -60,7 +64,7 @@ fun MyModelsScreen(onLoaded: () -> Unit, vm: MyModelsViewModel = hiltViewModel()
     val models by vm.models.collectAsStateWithLifecycle()
     val active by vm.hub.active.collectAsStateWithLifecycle()
     val status by vm.status.collectAsStateWithLifecycle()
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(vm::import) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { if (it.isNotEmpty()) vm.import(it) }
     LaunchedEffect(Unit) { vm.refresh() }
 
     Column(Modifier.fillMaxSize().padding(8.dp)) {

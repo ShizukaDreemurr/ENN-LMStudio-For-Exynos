@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.flowOf
  * verify publicly. Until then, [generate] reports an error and BackendSelector falls back to GPU/CPU for chat,
  * while NPU remains usable for fixed-shape graphs (classification, embedding, ASR encoders) via [runGraph].
  */
-class EnnEngine(private val bridge: EnnBridge, private val featureEnabled: Boolean = BuildConfig.ENN_ENABLED) : InferenceEngine {
+class EnnEngine(val bridge: EnnBridge, private val featureEnabled: Boolean = BuildConfig.ENN_ENABLED) : InferenceEngine {
     override val backend = Backend.NPU_ENN
     private var handle: EnnBridge.ModelHandle? = null
 

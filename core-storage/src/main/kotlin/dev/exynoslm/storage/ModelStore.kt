@@ -46,14 +46,19 @@ class ModelStore(private val context: Context, private val root: File = File(con
 
     suspend fun delete(model: LoadedModel) = withContext(Dispatchers.IO) { File(model.localPath).parentFile?.deleteRecursively() }
 
-    /** Import from SAF (Files app / USB). Copies once into private storage. */
-    suspend fun import(uri: Uri): LoadedModel = withContext(Dispatchers.IO) {
+    /**
+     * Import from SAF (Files app / USB). Copies once into private storage.
+     * `x.e9965.io.json` sidecars land next to `x.e9965.tflite` and are not registered as models (returns null).
+     */
+    suspend fun import(uri: Uri): LoadedModel? = withContext(Dispatchers.IO) {
         val name = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
             if (it.moveToFirst()) it.getString(0) else null
         } ?: "imported.bin"
-        val dest = File(dirFor("local/" + name.substringBeforeLast('.')), name)
+        val sidecar = name.endsWith(".io.json")
+        val stem = if (sidecar) name.removeSuffix(".io.json") else name.removeSuffix(".tflite").substringBeforeLast('.').let { if (name.endsWith(".tflite")) name.removeSuffix(".tflite") else it }
+        val dest = File(dirFor("local/$stem"), name)
         context.contentResolver.openInputStream(uri)!!.use { i -> dest.outputStream().use { o -> i.copyTo(o, 1 shl 20) } }
-        register(dest, null)
+        if (sidecar) null else register(dest, null)
     }
 
     fun wipe() { root.deleteRecursively() }

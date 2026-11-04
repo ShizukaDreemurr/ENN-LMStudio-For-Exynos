@@ -14,12 +14,22 @@ android {
         applicationId = "dev.exynoslm.app"
         minSdk = 31
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0-mvp"
+        // CI sets -PbuildNumber=<run number> so every APK has a higher versionCode and installs over the previous one.
+        val buildNumber = (project.findProperty("buildNumber") as String?)?.toIntOrNull() ?: 1
+        versionCode = buildNumber
+        versionName = "0.1.$buildNumber"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    signingConfigs {
+        create("shared") {
+            storeFile = rootProject.file("keystore/exynoslm-shared.jks")
+            storePassword = "exynoslm"; keyAlias = "exynoslm"; keyPassword = "exynoslm"
+        }
+    }
     buildTypes {
+        debug { signingConfig = signingConfigs.getByName("shared") }
         release {
+            signingConfig = signingConfigs.getByName("shared")
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
