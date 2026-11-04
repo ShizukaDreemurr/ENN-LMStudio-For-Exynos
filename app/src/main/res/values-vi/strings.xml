@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_chat">Trò chuyện</string>
+    <string name="nav_hub">Kho mô hình</string>
+    <string name="nav_models">Mô hình của tôi</string>
+    <string name="nav_agent">Tác tử</string>
+    <string name="nav_bench">Đo hiệu năng</string>
+    <string name="nav_settings">Cài đặt</string>
+    <string name="send">Gửi</string>
+    <string name="stop">Dừng</string>
+    <string name="regenerate">Tạo lại</string>
+    <string name="clear">Xoá</string>
+    <string name="message_hint">Nhập tin nhắn…</string>
+    <string name="no_model">Chưa nạp mô hình — chọn trong Mô hình của tôi</string>
+    <string name="search_hint">Tìm trên Hugging Face</string>
+    <string name="download">Tải về</string>
+    <string name="pause">Tạm dừng</string>
+    <string name="cancel">Huỷ</string>
+    <string name="load">Nạp</string>
+    <string name="delete">Xoá</string>
+    <string name="verify">Kiểm tra</string>
+    <string name="import_file">Nhập tệp</string>
+    <string name="goal_hint">Mô tả mục tiêu cho tác tử</string>
+    <string name="run">Chạy</string>
+    <string name="export_trace">Xuất trace</string>
+    <string name="confirm_action">Cho phép hành động này?</string>
+    <string name="allow">Cho phép</string>
+    <string name="deny">Từ chối</string>
+    <string name="backend">Phần cứng</string>
+    <string name="system_prompt">System prompt</string>
+    <string name="language">Ngôn ngữ</string>
+    <string name="theme">Giao diện</string>
+    <string name="wifi_only">Chỉ tải qua Wi-Fi</string>
+    <string name="battery_saver">Chế độ tiết kiệm pin</string>
+    <string name="max_context">Context tối đa (token)</string>
+    <string name="agent_internet">Cho phép tác tử dùng internet</string>
+    <string name="agent_dry_run">Tác tử chạy thử (không ghi dữ liệu)</string>
+    <string name="wipe">Xoá toàn bộ dữ liệu cục bộ</string>
+    <string name="license_warning">Giấy phép có thể hạn chế sử dụng hoặc yêu cầu ghi công</string>
+    <string name="hf_token">Token Hugging Face (cho mô hình bị giới hạn)</string>
+</resources>

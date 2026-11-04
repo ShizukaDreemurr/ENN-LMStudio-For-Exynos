@@ -4,7 +4,10 @@ buildscript {
     val jvmOnly = gradle.startParameter.projectProperties["jvmOnly"] == "true"
     repositories { if (!jvmOnly) google(); mavenCentral() }
     dependencies {
-        if (!jvmOnly) classpath("com.android.tools.build:gradle:${libs.versions.agp.get()}")
+        if (!jvmOnly) {
+            classpath("com.android.tools.build:gradle:${libs.versions.agp.get()}")
+            classpath("com.google.dagger:hilt-android-gradle-plugin:${libs.versions.hilt.get()}")
+        }
     }
 }
 plugins {
