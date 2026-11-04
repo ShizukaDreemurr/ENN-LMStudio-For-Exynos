@@ -17,6 +17,7 @@ import dev.exynoslm.runtime.EngineManager
 import dev.exynoslm.runtime.InferenceEngine
 import dev.exynoslm.runtime.cpu.MediaPipeLlmEngine
 import dev.exynoslm.runtime.enn.EnnEngine
+import dev.exynoslm.runtime.enn.LiteRtNpuBridge
 import dev.exynoslm.runtime.enn.StubEnnBridge
 import dev.exynoslm.runtime.gpu.GpuEngines
 import dev.exynoslm.storage.ModelStore
@@ -50,7 +51,7 @@ object AppModule {
      * (docs/ENN_INTEGRATION.md). Everything else picks it up automatically.
      */
     @Provides @Singleton fun engines(@ApplicationContext c: Context): Map<Backend, @JvmSuppressWildcards InferenceEngine> = mapOf(
-        Backend.NPU_ENN to EnnEngine(StubEnnBridge()),
+        Backend.NPU_ENN to EnnEngine(if (dev.exynoslm.runtime.enn.BuildConfig.ENN_ENABLED) LiteRtNpuBridge(c) else StubEnnBridge()),
         Backend.GPU to GpuEngines.llm(c),
         Backend.CPU to MediaPipeLlmEngine(c, Backend.CPU),
     )

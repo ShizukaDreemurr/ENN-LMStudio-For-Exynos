@@ -49,10 +49,15 @@ class BackendSelectorTest {
         assertEquals(listOf(Backend.NPU_ENN, Backend.CPU, Backend.GPU), order)
     }
 
+    @Test fun aotNpuFormat() {
+        assertEquals(ModelFormat.ENN_COMPILED, ModelFormat.fromFileName("sr_x2.e9965.tflite"))
+        assertEquals(ModelFormat.TFLITE, ModelFormat.fromFileName("sr_x2.tflite"))
+    }
+
     @Test fun badges() {
         assertTrue(CompatBadge.NEEDS_CONVERSION in Compatibility.badges(ModelFile("a-q4_k_m.gguf", 1L shl 30), ModelTask.TEXT_GENERATION, 12L shl 30))
         assertTrue(CompatBadge.TOO_LARGE in Compatibility.badges(ModelFile("big.task", 8L shl 30), ModelTask.TEXT_GENERATION, 12L shl 30))
-        assertTrue(CompatBadge.NPU_READY in Compatibility.badges(ModelFile("mobilenet_int8.tflite", 4L shl 20), ModelTask.IMAGE_CLASSIFICATION, 12L shl 30))
+        assertTrue(CompatBadge.NPU_READY in Compatibility.badges(ModelFile("mobilenet_int8.e9965.tflite", 4L shl 20), ModelTask.IMAGE_CLASSIFICATION, 12L shl 30))
     }
 
     @Test fun lruUnloadsEldest() = runTest {

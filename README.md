@@ -6,7 +6,7 @@ và hiển thị hiệu năng (tok/s, TTFT, RAM, nhiệt, pin, backend, lý do f
 
 > **Trung thực về phạm vi hiện tại (MVP):**
 > - Chạy LLM thật qua **MediaPipe LLM Inference** (`.task`) trên **CPU và GPU**.
-> - **NPU/ENN chỉ là adapter + stub/mock** sau feature flag `enn.enabled` — xem [docs/ENN_INTEGRATION.md](docs/ENN_INTEGRATION.md).
+> - **NPU**: `LiteRtNpuBridge` (LiteRT 2.3.2 + Samsung dispatch, model AOT `*.e9965.tflite` INT8) sau cờ `enn.enabled`; mặc định stub. **Chưa build/chạy thử trong repo này.** Xem [docs/ENN_INTEGRATION.md](docs/ENN_INTEGRATION.md).
 > - GPU Xclipse (RDNA) của Exynos 2600 **chưa được Google xác nhận** cho đường GPU của MediaPipe; nếu load lỗi app tự fallback CPU.
 > - Vision/ASR/embedding: có badge & bộ lọc trên Model Hub, chưa có pipeline chạy (xem Lộ trình).
 
@@ -72,7 +72,7 @@ Gợi ý cho máy 12 GB: Gemma 3 1B INT4 (~0.5 GB), Qwen2.5 1.5B INT8, Phi-4-min
 |---|---|---|
 | CPU (XNNPACK qua MediaPipe) | `.task` LLM | Chậm hơn GPU; chiếm CPU — agent nền nên ít thread (`CpuTuning`) |
 | GPU (MediaPipe GPU) | `.task` LLM | Xclipse/RDNA chưa được xác nhận; fallback CPU nếu lỗi; theo dõi nhiệt |
-| NPU (ENN) | Không (stub) | Cần SDK Samsung; chỉ graph shape tĩnh đã lượng tử; **không chạy GGUF**; LLM decode trên NPU chưa làm |
+| NPU (LiteRT + Samsung dispatch) | Graph INT8 AOT E9965 (khi `enn.enabled`) | Shape tĩnh; copy buffer tốn thời gian; **không chạy GGUF**; chưa có LLM trên NPU |
 | GGUF | Không | Cần runtime llama.cpp (JNI) — xem Lộ trình |
 
 Tham số chưa backend nào hỗ trợ sẽ báo `Warning` (ví dụ repetition penalty với MediaPipe).

@@ -48,8 +48,8 @@ class EnnEngine(private val bridge: EnnBridge, private val featureEnabled: Boole
             backend = backend,
             available = ok,
             // Text generation is excluded on purpose: only compiled/quantized fixed-shape graphs.
-            supportedFormats = setOf(ModelFormat.ENN_COMPILED, ModelFormat.TFLITE),
-            supportedQuantizations = setOf(Quantization.INT8, Quantization.INT4, Quantization.FP16),
+            supportedFormats = setOf(ModelFormat.ENN_COMPILED), // AOT-compiled for E9965/E9955 only
+            supportedQuantizations = emptySet(), // validated: full-INT8; checked by the AOT compiler, not by file name
             supportsStreaming = false,
             unavailableReason = if (ok) null else bridge.describe(),
         )

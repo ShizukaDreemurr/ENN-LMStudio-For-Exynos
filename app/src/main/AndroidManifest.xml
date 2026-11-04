@@ -19,8 +19,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ExynosLM">
 
-        <!-- Vendor NPU libraries must be declared if the ENN SDK requires them; verify the exact .so name in Samsung docs. -->
-        <!-- <uses-native-library android:name="libenn_xxx.so" android:required="false" /> -->
+        <!-- System ENN lib dlopen'ed by libLiteRtDispatch_Samsung.so. required=false so non-Exynos devices still install.
+             Whether this declaration is strictly needed is UNVERIFIED; compare with the 4 entries in the reference app's manifest (lines 30-33). -->
+        <uses-native-library android:name="libenn_public_api_cpp.so" android:required="false" />
 
         <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
             <intent-filter>

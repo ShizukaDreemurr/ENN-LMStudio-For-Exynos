@@ -49,12 +49,10 @@ object Compatibility {
         val out = mutableSetOf<CompatBadge>()
         when (file.format) {
             ModelFormat.MEDIAPIPE_TASK, ModelFormat.LITERT_LM -> { out += CompatBadge.GPU; out += CompatBadge.CPU }
-            ModelFormat.TFLITE -> { out += CompatBadge.GPU; out += CompatBadge.CPU; out += CompatBadge.NPU_READY }
+            ModelFormat.TFLITE -> { out += CompatBadge.GPU; out += CompatBadge.CPU; if (file.quantization == dev.exynoslm.model.Quantization.INT8) out += CompatBadge.NEEDS_CONVERSION }
             ModelFormat.ENN_COMPILED -> out += CompatBadge.NPU_READY
             ModelFormat.GGUF, ModelFormat.ONNX, ModelFormat.SAFETENSORS, ModelFormat.UNKNOWN -> out += CompatBadge.NEEDS_CONVERSION
         }
-        // TFLITE is only "NPU-ready" if quantized; float graphs usually fall back off the NPU.
-        if (file.format == ModelFormat.TFLITE && file.quantization.name.startsWith("FP")) out -= CompatBadge.NPU_READY
         val size = file.sizeBytes
         if (size != null && estimatedRamBytes(size, 2048) > totalRamBytes / 2) out += CompatBadge.TOO_LARGE
         if (task == ModelTask.IMAGE_GENERATION) out += CompatBadge.HEAVY_FOR_MOBILE

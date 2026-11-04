@@ -1,59 +1,54 @@
-# Tích hợp Samsung ENN / Exynos NPU
+# Exynos NPU qua LiteRT + Samsung dispatch
 
-> **Trạng thái:** `runtime-enn` hiện chỉ có **adapter + stub + mock**. Không có dòng code nào gọi API Samsung thật,
-> vì SDK không được phân phối công khai theo cách có thể kiểm chứng từ repo này. Mọi tên API Samsung ở dưới đều là
-> *việc cần xác minh*, không phải sự thật.
+> Nguồn: thực nghiệm trên **SM-S947B (Galaxy S26+)** và mã nguồn `google-ai-edge/litert` @ `b6b64443` (2026-11-01),
+> `litert/vendors/samsung/dispatch/*`, `litert/vendors/samsung/soc_model.cc`. Mục nào chưa kiểm chứng ghi **CHƯA XÁC MINH**.
 
-## 1. Kiến trúc boundary
+## 1. Đường chạy thật (không gọi ENN trực tiếp)
 
 ```
-UI / Agent ──► InferenceEngine (core-runtime)
-                    ▲
-             EnnEngine (runtime-enn)  ──►  EnnBridge (interface trung lập)
-                                               ├─ StubEnnBridge   (mặc định, luôn "unavailable")
-                                               ├─ MockEnnBridge   (test/demo, copy input→output)
-                                               └─ RealEnnBridge   (BẠN viết, bọc AAR/.so của Samsung)
+EnnEngine ─► LiteRtNpuBridge ─► LiteRT 2.3.2 CompiledModel(Accelerator.NPU)
+                                   └► libLiteRtDispatch_Samsung.so   (tự build từ tag v2.3.2, đóng gói trong APK)
+                                        └► libenn_public_api_cpp.so  (lib hệ thống, KHÔNG đóng gói, dispatch dlopen)
 ```
+Trình tự ENN bên trong dispatch: `EnnInitialize → EnnOpenModel* → EnnGetBuffersInfo (chỉ trả số lượng) → EnnSetBufferByIndex
+→ EnnBufferCommit → EnnExecuteModel (đồng bộ) → … → EnnCloseModel → EnnDeinitialize`. Chữ ký C: CHƯA XÁC MINH.
 
-Phần còn lại của app **không** import bất kỳ class nào của Samsung. Thay backend = thay 1 dòng trong
-`app/src/main/kotlin/dev/exynoslm/app/di/AppModule.kt` (`EnnEngine(StubEnnBridge())`).
+## 2. Bật NPU
 
-## 2. Các bước bật ENN thật
+1. Build `libLiteRt.so` + `libLiteRtDispatch_Samsung.so` từ LiteRT tag **v2.3.2** (bản Maven ẩn export abseil mà dispatch cần).
+   Đặt vào `runtime-enn/jniLibs/arm64-v8a/`. **Không** chép `libenn_public_api_cpp.so`.
+2. Build với `-Penn.enabled=true` → thêm `com.google.ai.edge.litert:litert:2.3.2`, `BuildConfig.ENN_ENABLED=true`,
+   `AppModule` dùng `LiteRtNpuBridge`. Lưu ý: LiteRT bị nâng lên 2.x toàn app → kiểm tra lại `GpuEngines.liteRtDelegateSupported()`.
+3. Phát hiện NPU: `Environment.getAvailableAccelerators()` chứa `NPU`. Trên Snapdragon: CHƯA XÁC MINH (bridge trả `false` an toàn).
+4. Manifest đã có `<uses-native-library android:name="libenn_public_api_cpp.so" android:required="false"/>` —
+   có thực sự cần hay không: CHƯA XÁC MINH; đối chiếu 4 dòng 30–33 trong manifest app tham chiếu.
 
-1. **Lấy SDK hợp lệ.** Kiểm tra Samsung Developers / Exynos AI Studio / chương trình đối tác Samsung System LSI
-   tại thời điểm bạn làm. Samsung đã thay đổi chính sách phân phối Neural SDK nhiều lần; có thể cần NDA hoặc tài khoản đối tác.
-   Ghi lại: tên artifact, phiên bản, giấy phép, danh sách SoC hỗ trợ (phải có Exynos 2600).
-2. Đặt artifact vào `runtime-enn/libs/` (KHÔNG commit nếu giấy phép cấm phân phối lại — thêm vào `.gitignore`).
-3. Bỏ comment dependency trong `runtime-enn/build.gradle.kts` và chạy với `-Penn.enabled=true`
-   (hoặc đặt `enn.enabled=true` trong `gradle.properties`). Cờ này sinh `BuildConfig.ENN_ENABLED`.
-4. Viết `RealEnnBridge : EnnBridge` theo **tài liệu chính thức**. Cần xác minh:
-   - Cách khởi tạo context/runtime, threading (có cần 1 thread cố định không?).
-   - Định dạng model đã compile (đuôi file — `ModelFormat.ENN_COMPILED` hiện giả định `.nnc`, *chưa kiểm chứng*).
-   - Yêu cầu buffer (direct ByteBuffer? ION/AHardwareBuffer? alignment?) để tránh copy giữa NPU/GPU.
-   - Tên thư viện native cần khai báo bằng `<uses-native-library>` trong `AndroidManifest.xml` (đã để sẵn comment).
-5. Đổi `AppModule` sang `EnnEngine(if (BuildConfig.ENN_ENABLED) RealEnnBridge(ctx) else StubEnnBridge())`.
-6. Chạy màn **Benchmark** để so sánh NPU / GPU / CPU.
+## 3. Chuẩn bị model (AOT trên CI, không trên máy)
 
-## 3. Chuyển đổi model cho NPU
+- Đầu vào: **TFLite full-INT8, shape tĩnh**. pip `ai-edge-litert==2.3.0` + `ai-edge-litert-sdk-samsung-nightly`, `Target(SocModel.E9965)`.
+- Đầu ra AOT vẫn là `.tflite` ⇒ app dùng quy ước tên: **`<name>.e9965.tflite`** (→ `ModelFormat.ENN_COMPILED`).
+- **Sidecar bắt buộc** `<name>.e9965.io.json` (vì ENN chỉ trả số lượng tensor, không trả shape/dtype):
+  ```json
+  {"inputs":[{"name":"in","shape":[1,540,1170,3],"dtype":"int8"}],
+   "outputs":[{"name":"out","shape":[1,1080,2340,3],"dtype":"int8"}]}
+  ```
+  Nên sinh file này ngay trong script compile từ metadata TFLite.
+- Op đã biết không lên NPU: `DEPTH_TO_SPACE` (thay bằng pixel-shuffle residual 12 kênh). Báo cáo coverage op: CHƯA XÁC MINH.
+- E9965 = Exynos 2600 là **suy ra** từ việc chạy được trên S947B. Chạy trên SoC/firmware khác: CHƯA XÁC MINH.
 
-- Nguồn: TFLite/LiteRT **đã lượng tử hoá** (INT8, hoặc INT4/FP16 nếu toolchain hỗ trợ), hoặc ONNX qua converter của Samsung.
-- Shape tĩnh. Operator không được hỗ trợ sẽ bị fallback (về CPU) hoặc compile lỗi — luôn đọc báo cáo coverage của toolchain.
-- **GGUF không chạy trực tiếp trên NPU.** GGUF là định dạng của llama.cpp; muốn lên NPU phải export lại từ checkpoint gốc.
-- **LLM trên NPU** cần: graph prefill + graph decode với KV-cache là I/O, tokenizer riêng, sampling trên CPU.
-  `EnnEngine.generate()` hiện trả `Error` một cách có chủ đích → `BackendSelector` tự fallback sang GPU/CPU.
+## 4. Giới hạn hiện tại của bridge
 
-## 4. Việc nên đưa lên NPU trước (thực tế hơn LLM)
-
-| Tác vụ | Lý do |
+| Hạng mục | Trạng thái |
 |---|---|
-| Embedding (MiniLM, bge-small INT8) | Graph nhỏ, shape cố định |
-| ASR encoder (Whisper tiny/base encoder) | Phần nặng nhất của ASR, shape cố định |
-| Image classification / detection / OCR | Use-case kinh điển của NPU |
-| Image encoder cho VLM | Chạy NPU, LLM decode trên GPU/CPU (hybrid) |
+| Dữ liệu | Copy `ByteBuffer → TensorBuffer.writeInt8/readInt8` (chỉ INT8). Copy chiếm phần lớn thời gian NPU. |
+| Zero-copy | Dispatch chỉ nhận DMA-BUF (`EnnCreateBufferFromFdWithOffset`). Đường fd/AHardwareBuffer: chưa làm, CHƯA XÁC MINH. |
+| Thread | Khoá toàn cục `LiteRtNpuBridge.NPU_LOCK` quanh mọi lần chạy (ràng buộc thật của ENN: CHƯA XÁC MINH). |
+| API LiteRT | Gọi bằng reflection; tên hàm cần đối chiếu `SrBackend.kt`/`NpuEnv.kt`. Sai tên ⇒ `isAvailable()=false`, không crash. |
+| LLM | Không. Chỉ có dấu hiệu `ai_litecore_manager.h::SetGenAiPerfConfig`. `EnnEngine.generate()` trả lỗi ⇒ fallback GPU/CPU. |
+| Giấy phép | Đóng gói `libLiteRtDispatch_Samsung.so` / gói pip Samsung vào APK: CHƯA XÁC MINH. |
 
-## 5. Checklist xác minh trước khi merge RealEnnBridge
-
-- [ ] Link tài liệu chính thức + phiên bản SDK ghi trong KDoc của `RealEnnBridge`.
-- [ ] `isAvailable()` trả false an toàn trên máy không phải Exynos (Snapdragon S26 variant!).
-- [ ] Không crash khi thiếu `.so` (bắt `UnsatisfiedLinkError`).
-- [ ] Benchmark trên Galaxy S26+ thật được lưu vào bảng `benchmarks`.
+## 5. Việc tiếp theo
+- [ ] Đối chiếu tên API LiteRT trong `LiteRtNpuBridge` với `SrBackend.kt`; khi chắc chắn thì bỏ reflection.
+- [ ] Đường zero-copy DMA-BUF.
+- [ ] Đưa embedding / ASR encoder / vision INT8 lên NPU (fixed-shape), LLM giữ ở GPU/CPU.
+- [ ] Ghi số ms/frame thật vào bảng `benchmarks`.

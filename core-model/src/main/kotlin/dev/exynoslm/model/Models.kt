@@ -10,14 +10,19 @@ enum class ModelFormat(val extensions: List<String>) {
     ONNX(listOf(".onnx")),
     GGUF(listOf(".gguf")),
     SAFETENSORS(listOf(".safetensors")),
-    /** Samsung ENN compiled graph. Exact extension depends on the vendor toolchain (unverified; see docs/ENN_INTEGRATION.md). */
-    ENN_COMPILED(listOf(".nnc")),
+    /**
+     * TFLite AOT-compiled for the Samsung NPU via `ai-edge-litert-sdk-samsung` (Target SocModel.E9965).
+     * The AOT output is still a `.tflite`, so we rely on a naming convention: `<name>.e9965.tflite` / `<name>.e9955.tflite`.
+     */
+    ENN_COMPILED(listOf(".e9965.tflite", ".e9955.tflite")),
     UNKNOWN(emptyList());
 
     companion object {
         fun fromFileName(name: String): ModelFormat {
             val lower = name.lowercase()
-            return entries.firstOrNull { f -> f.extensions.any { lower.endsWith(it) } } ?: UNKNOWN
+            // Longest suffix wins, so ".e9965.tflite" beats ".tflite".
+            return entries.flatMap { f -> f.extensions.map { f to it } }
+                .filter { lower.endsWith(it.second) }.maxByOrNull { it.second.length }?.first ?: UNKNOWN
         }
     }
 }
