@@ -38,4 +38,130 @@
     <string name="wipe">Xoá toàn bộ dữ liệu cục bộ</string>
     <string name="license_warning">Giấy phép có thể hạn chế sử dụng hoặc yêu cầu ghi công</string>
     <string name="hf_token">Token Hugging Face (cho mô hình bị giới hạn)</string>
+    <!-- Bottom navigation: short labels, shown under the selected tab only -->
+    <string name="nav_chat_short">Chat</string>
+    <string name="nav_hub_short">Kho</string>
+    <string name="nav_models_short">Mô hình</string>
+    <string name="nav_agent_short">Tác tử</string>
+    <string name="nav_bench_short">Đo máy</string>
+    <string name="nav_settings_short">Cài đặt</string>
+
+    <!-- Common -->
+    <string name="back">Quay lại</string>
+    <string name="close">Đóng</string>
+    <string name="retry">Thử lại</string>
+    <string name="details">Chi tiết</string>
+    <string name="fallback_title">Chuyển sang phần cứng dự phòng</string>
+
+    <!-- Perf strip -->
+    <string name="perf_backend">Phần cứng</string>
+    <string name="perf_toks">tok/s</string>
+    <string name="perf_ttft">TTFT</string>
+    <string name="perf_ram_free">RAM trống</string>
+    <string name="perf_pss">PSS ứng dụng</string>
+    <string name="perf_thermal">Nhiệt độ</string>
+    <string name="perf_battery">Pin</string>
+
+    <!-- Chat -->
+    <string name="chat_empty_title">Chưa nạp mô hình</string>
+    <string name="chat_empty_sub">Nạp một mô hình trong Mô hình của tôi rồi bắt đầu trò chuyện. Mọi thứ chạy ngay trên máy.</string>
+    <string name="open_models">Mở Mô hình của tôi</string>
+
+    <!-- Hub -->
+    <string name="hub_filter_any">Tất cả</string>
+    <string name="hub_empty_title">Không tìm thấy mô hình</string>
+    <string name="hub_empty_sub">Thử từ khoá khác hoặc bớt một bộ lọc.</string>
+    <string name="hub_error_title">Không kết nối được Hugging Face</string>
+    <string name="hub_error_sub">Kiểm tra kết nối mạng rồi thử lại.</string>
+    <string name="hub_load_more">Tải thêm</string>
+    <string name="hub_no_license">chưa có giấy phép</string>
+    <string name="hub_heavy">Nặng, có thể không hợp với di động</string>
+    <string name="hub_gated">Mô hình bị giới hạn: hãy chấp nhận giấy phép trên huggingface.co và nhập token trong Cài đặt.</string>
+    <string name="hub_no_files">Kho này không có tệp mô hình chạy được (.task, .litertlm, .tflite, .gguf, .onnx).</string>
+    <string name="hub_waiting_network_title">Đang chờ mạng</string>
+    <string name="hub_waiting_network">Bản tải sẽ tiếp tục khi có kết nối phù hợp (chỉ Wi-Fi?).</string>
+    <string name="hub_downloaded">Đã tải xong</string>
+    <string name="hub_download_failed">Tải về thất bại</string>
+    <string name="hub_author">Tác giả</string>
+    <string name="hub_license">Giấy phép</string>
+    <string name="hub_updated">Cập nhật</string>
+    <string name="hub_downloads">Lượt tải</string>
+    <string name="hub_tags">Thẻ</string>
+    <string name="hub_files">Tệp mô hình</string>
+    <string name="badge_npu_ready">Sẵn sàng cho NPU</string>
+    <string name="badge_gpu">GPU</string>
+    <string name="badge_cpu">CPU</string>
+    <string name="badge_needs_conversion">Cần chuyển đổi</string>
+    <string name="badge_too_large">Quá lớn</string>
+    <string name="badge_heavy">Nặng với di động</string>
+
+    <!-- My Models -->
+    <string name="models_empty_title">Chưa có mô hình nào</string>
+    <string name="models_empty_sub">Tải một mô hình từ Kho mô hình hoặc nhập tệp từ điện thoại.</string>
+    <string name="models_loaded">Đang dùng · %1$s</string>
+    <string name="models_loading">Đang nạp mô hình…</string>
+    <string name="models_load_failed">Nạp mô hình thất bại</string>
+    <string name="models_fallback">Phương án dự phòng</string>
+    <string name="models_local">cục bộ</string>
+    <string name="models_delete_title">Xoá mô hình này?</string>
+    <string name="models_delete_msg">%1$s sẽ bị xoá khỏi máy.</string>
+
+    <!-- Agent -->
+    <string name="agent_need_model">Hãy nạp một mô hình trò chuyện trong Mô hình của tôi trước.</string>
+    <string name="agent_empty_title">Sẵn sàng khi bạn cần</string>
+    <string name="agent_empty_sub">Mô tả mục tiêu. Tác tử sẽ lập kế hoạch, gọi công cụ và hiện từng bước tại đây.</string>
+    <string name="agent_tools">Công cụ</string>
+    <string name="agent_resume">Tiếp tục</string>
+    <string name="agent_result">Kết quả</string>
+    <string name="agent_confirm_hint">Tác tử muốn chạy một công cụ có thể thay đổi dữ liệu.</string>
+
+    <!-- Benchmark -->
+    <string name="bench_device_title">Báo cáo trên máy thật</string>
+    <string name="bench_measure">Đo máy</string>
+    <string name="bench_copy">Sao chép báo cáo</string>
+    <string name="bench_copied">Đã sao chép</string>
+    <string name="bench_copied_toast">Đã sao chép báo cáo vào bộ nhớ tạm</string>
+    <string name="bench_llm_title">Đo hiệu năng LLM</string>
+    <string name="bench_run">Chạy NPU / GPU / CPU</string>
+    <string name="bench_chart_title">Tốc độ theo phần cứng</string>
+    <string name="bench_metric_decode">Sinh chữ</string>
+    <string name="bench_metric_prefill">Đọc prompt</string>
+    <string name="bench_metric_ttft">TTFT</string>
+    <string name="bench_no_results">Chưa có kết quả. Hãy nạp một mô hình rồi chạy đo.</string>
+    <string name="bench_avg">TB</string>
+    <string name="bench_history">Lịch sử</string>
+
+    <!-- Settings -->
+    <string name="settings_appearance">Giao diện</string>
+    <string name="settings_inference">Tải về và suy luận</string>
+    <string name="settings_agent">Tác tử</string>
+    <string name="settings_privacy">Riêng tư và dữ liệu</string>
+    <string name="theme_system">Theo hệ thống</string>
+    <string name="theme_light">Sáng</string>
+    <string name="theme_dark">Tối</string>
+    <string name="telemetry_note">Số liệu đo chỉ ở trên máy này: được hiển thị tại chỗ và không bao giờ được tải lên.</string>
+    <string name="wipe_message">Thao tác này xoá vĩnh viễn mô hình, cuộc trò chuyện, nhật ký tác tử, kết quả đo, cài đặt và khoá mã hoá.</string>
+    <string name="wipe_confirm_word">XOÁ</string>
+    <!-- Hub: task filters and extras -->
+    <string name="hub_task_chat">Trò chuyện / LLM</string>
+    <string name="hub_task_embed">Embedding</string>
+    <string name="hub_task_asr">Giọng nói</string>
+    <string name="hub_task_cls">Phân loại ảnh</string>
+    <string name="hub_task_det">Nhận diện vật thể</string>
+    <string name="hub_task_ocr">OCR</string>
+    <string name="hub_task_imggen">Tạo ảnh</string>
+    <string name="hub_gated_short">Cần cấp quyền</string>
+    <string name="hub_pause_cancel">Tạm dừng / Huỷ</string>
+
+    <!-- My Models / Agent / Benchmark / Settings extras -->
+    <string name="models_storage">Bộ nhớ</string>
+    <string name="agent_badge_ok">Xong</string>
+    <string name="agent_badge_failed">Lỗi</string>
+    <string name="agent_badge_dry_run">Chạy thử</string>
+    <string name="agent_badge_denied">Bị từ chối</string>
+    <string name="agent_final">Kết quả cuối</string>
+    <string name="agent_stopped">Đã dừng</string>
+    <string name="agent_thinking">Đang suy nghĩ…</string>
+    <string name="bench_load">Nạp</string>
+    <string name="settings_backend_auto">Tự động</string>
 </resources>
