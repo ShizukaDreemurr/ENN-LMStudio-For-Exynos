@@ -91,4 +91,10 @@ dependencies {
     androidTestImplementation(libs.androidx.test.junit)
 }
 
-kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        // FlowRow etc. (Compose foundation 1.7) are still @ExperimentalLayoutApi.
+        optIn.add("androidx.compose.foundation.layout.ExperimentalLayoutApi")
+    }
+}
