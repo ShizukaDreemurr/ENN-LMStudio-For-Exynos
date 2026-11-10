@@ -62,6 +62,7 @@ dependencies {
     implementation(project(":runtime-cpu"))
     implementation(project(":runtime-gpu"))
     implementation(project(":runtime-enn"))
+    implementation(project(":runtime-litertlm"))
     implementation(project(":runtime-agent"))
 
     implementation(platform(libs.compose.bom))
