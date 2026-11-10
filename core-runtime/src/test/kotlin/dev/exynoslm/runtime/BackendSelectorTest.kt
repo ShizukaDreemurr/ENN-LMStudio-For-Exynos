@@ -55,9 +55,29 @@ class BackendSelectorTest {
     }
 
     @Test fun badges() {
-        assertTrue(CompatBadge.NEEDS_CONVERSION in Compatibility.badges(ModelFile("a-q4_k_m.gguf", 1L shl 30), ModelTask.TEXT_GENERATION, 12L shl 30))
         assertTrue(CompatBadge.TOO_LARGE in Compatibility.badges(ModelFile("big.task", 8L shl 30), ModelTask.TEXT_GENERATION, 12L shl 30))
         assertTrue(CompatBadge.NPU_READY in Compatibility.badges(ModelFile("mobilenet_int8.e9965.tflite", 4L shl 20), ModelTask.IMAGE_CLASSIFICATION, 12L shl 30))
+    }
+
+    @Test fun badgesReflectRunnableFormats() {
+        val ram = 12L shl 30
+        val gguf = Compatibility.badges(ModelFile("a-q4_k_m.gguf", 1L shl 30), ModelTask.TEXT_GENERATION, ram)
+        assertEquals(setOf(CompatBadge.CPU, CompatBadge.GPU), gguf)
+        assertEquals(setOf(CompatBadge.GPU, CompatBadge.CPU), Compatibility.badges(ModelFile("m.litertlm", 1L shl 30), ModelTask.TEXT_GENERATION, ram))
+        assertEquals(setOf(CompatBadge.GPU, CompatBadge.CPU), Compatibility.badges(ModelFile("m.task", 1L shl 30), ModelTask.TEXT_GENERATION, ram))
+        assertEquals(setOf(CompatBadge.GPU, CompatBadge.CPU), Compatibility.badges(ModelFile("m.tflite", 1L shl 20), ModelTask.TEXT_GENERATION, ram))
+    }
+
+    @Test fun unrunnableFormatsNeedConversion() {
+        val ram = 12L shl 30
+        for (name in listOf("m.onnx", "m.safetensors", "m.bin")) {
+            assertEquals(setOf(CompatBadge.NEEDS_CONVERSION), Compatibility.badges(ModelFile(name, 1L shl 20), ModelTask.TEXT_GENERATION, ram))
+        }
+    }
+
+    @Test fun customRunnableMapOverridesDefaults() {
+        val none = Compatibility.badges(ModelFile("m.task", 1L shl 20), ModelTask.TEXT_GENERATION, 12L shl 30, runnable = emptyMap())
+        assertEquals(setOf(CompatBadge.NEEDS_CONVERSION), none)
     }
 
     @Test fun lruUnloadsEldest() = runTest {
