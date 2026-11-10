@@ -17,6 +17,8 @@ class FakeEngine(
     private val available: Boolean = true,
     private val failLoad: Boolean = false,
     private val tokenDelayMs: Long = 0,
+    /** Formats this fake claims to support. Defaults to all, so routing tests can restrict it. */
+    private val formats: Set<ModelFormat> = ModelFormat.entries.toSet(),
     private val responder: (List<ChatMessage>) -> String = { "Echo: " + (it.lastOrNull()?.content ?: "") },
 ) : InferenceEngine {
     var loaded: LoadedModel? = null; private set
@@ -49,7 +51,7 @@ class FakeEngine(
     override fun capabilities() = BackendCapabilities(
         backend = backend,
         available = available,
-        supportedFormats = ModelFormat.entries.toSet(),
+        supportedFormats = formats,
         supportedQuantizations = Quantization.entries.toSet(),
         unavailableReason = if (available) null else "fake: unavailable",
     )

@@ -44,15 +44,28 @@ object Compatibility {
         return CompatibilityReport(caps.backend, reasons.isEmpty(), reasons)
     }
 
+    /**
+     * What the app can actually run, per file format. Formats missing from the map are not runnable
+     * and get NEEDS_CONVERSION. Keep in sync with the engines registered in the app.
+     */
+    val DEFAULT_RUNNABLE: Map<ModelFormat, Set<CompatBadge>> = mapOf(
+        ModelFormat.MEDIAPIPE_TASK to setOf(CompatBadge.GPU, CompatBadge.CPU),
+        ModelFormat.LITERT_LM to setOf(CompatBadge.GPU, CompatBadge.CPU),
+        ModelFormat.GGUF to setOf(CompatBadge.CPU, CompatBadge.GPU),
+        ModelFormat.TFLITE to setOf(CompatBadge.GPU, CompatBadge.CPU),
+        ModelFormat.ENN_COMPILED to setOf(CompatBadge.NPU_READY),
+    )
+
     /** Static badge computation for Model Hub listings (before download). */
-    fun badges(file: ModelFile, task: ModelTask, totalRamBytes: Long): Set<CompatBadge> {
+    fun badges(
+        file: ModelFile,
+        task: ModelTask,
+        totalRamBytes: Long,
+        runnable: Map<ModelFormat, Set<CompatBadge>> = DEFAULT_RUNNABLE,
+    ): Set<CompatBadge> {
         val out = mutableSetOf<CompatBadge>()
-        when (file.format) {
-            ModelFormat.MEDIAPIPE_TASK, ModelFormat.LITERT_LM -> { out += CompatBadge.GPU; out += CompatBadge.CPU }
-            ModelFormat.TFLITE -> { out += CompatBadge.GPU; out += CompatBadge.CPU; if (file.quantization == dev.exynoslm.model.Quantization.INT8) out += CompatBadge.NEEDS_CONVERSION }
-            ModelFormat.ENN_COMPILED -> out += CompatBadge.NPU_READY
-            ModelFormat.GGUF, ModelFormat.ONNX, ModelFormat.SAFETENSORS, ModelFormat.UNKNOWN -> out += CompatBadge.NEEDS_CONVERSION
-        }
+        out += runnable[file.format] ?: setOf(CompatBadge.NEEDS_CONVERSION)
+        if (file.format == ModelFormat.TFLITE && file.quantization == dev.exynoslm.model.Quantization.INT8) out += CompatBadge.NEEDS_CONVERSION
         val size = file.sizeBytes
         if (size != null && estimatedRamBytes(size, 2048) > totalRamBytes / 2) out += CompatBadge.TOO_LARGE
         if (task == ModelTask.IMAGE_GENERATION) out += CompatBadge.HEAVY_FOR_MOBILE
