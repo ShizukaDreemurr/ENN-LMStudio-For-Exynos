@@ -39,4 +39,111 @@
     <string name="wipe">Delete all local data</string>
     <string name="license_warning">License may restrict use or require attribution</string>
     <string name="hf_token">Hugging Face token (for gated models)</string>
+    <!-- Brand kicker (not translated) -->
+    <string name="app_kicker" translatable="false">Exynos 2600 · Xclipse</string>
+
+    <!-- Bottom navigation: short labels, shown under the selected tab only -->
+    <string name="nav_chat_short">Chat</string>
+    <string name="nav_hub_short">Hub</string>
+    <string name="nav_models_short">Models</string>
+    <string name="nav_agent_short">Agent</string>
+    <string name="nav_bench_short">Bench</string>
+    <string name="nav_settings_short">Settings</string>
+
+    <!-- Common -->
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="retry">Try again</string>
+    <string name="details">Details</string>
+    <string name="fallback_title">Backend fallback</string>
+
+    <!-- Perf strip -->
+    <string name="perf_backend">Backend</string>
+    <string name="perf_toks">tok/s</string>
+    <string name="perf_ttft">TTFT</string>
+    <string name="perf_ram_free">RAM free</string>
+    <string name="perf_pss">App PSS</string>
+    <string name="perf_thermal">Thermal</string>
+    <string name="perf_battery">Battery</string>
+
+    <!-- Chat -->
+    <string name="chat_empty_title">No model loaded</string>
+    <string name="chat_empty_sub">Load a model from My Models and start chatting. Everything runs on this device.</string>
+    <string name="open_models">Open My Models</string>
+
+    <!-- Hub -->
+    <string name="hub_filter_any">All</string>
+    <string name="hub_empty_title">No models found</string>
+    <string name="hub_empty_sub">Try another keyword or loosen a filter.</string>
+    <string name="hub_error_title">Couldn\'t reach Hugging Face</string>
+    <string name="hub_error_sub">Check your connection and try again.</string>
+    <string name="hub_load_more">Load more</string>
+    <string name="hub_no_license">no license</string>
+    <string name="hub_heavy">Heavy / may not suit mobile</string>
+    <string name="hub_gated">Gated model: accept the license on huggingface.co and set a token in Settings.</string>
+    <string name="hub_no_files">No runnable model files (.task, .litertlm, .tflite, .gguf, .onnx) in this repo.</string>
+    <string name="hub_waiting_network_title">Waiting for network</string>
+    <string name="hub_waiting_network">The download resumes when a suitable connection is available (Wi-Fi only?).</string>
+    <string name="hub_downloaded">Downloaded</string>
+    <string name="hub_download_failed">Download failed</string>
+    <string name="hub_author">Author</string>
+    <string name="hub_license">License</string>
+    <string name="hub_updated">Updated</string>
+    <string name="hub_downloads">Downloads</string>
+    <string name="hub_tags">Tags</string>
+    <string name="hub_files">Model files</string>
+    <string name="badge_npu_ready">NPU ready</string>
+    <string name="badge_gpu">GPU</string>
+    <string name="badge_cpu">CPU</string>
+    <string name="badge_needs_conversion">Needs conversion</string>
+    <string name="badge_too_large">Too large</string>
+    <string name="badge_heavy">Heavy for mobile</string>
+
+    <!-- My Models -->
+    <string name="models_empty_title">No models yet</string>
+    <string name="models_empty_sub">Download one from the Model Hub or import a file from this phone.</string>
+    <string name="models_loaded">Loaded · %1$s</string>
+    <string name="models_loading">Loading model…</string>
+    <string name="models_load_failed">Load failed</string>
+    <string name="models_fallback">Fallback</string>
+    <string name="models_local">local</string>
+    <string name="models_delete_title">Delete this model?</string>
+    <string name="models_delete_msg">%1$s will be removed from this device.</string>
+
+    <!-- Agent -->
+    <string name="agent_need_model">Load a chat model first in My Models.</string>
+    <string name="agent_empty_title">Ready when you are</string>
+    <string name="agent_empty_sub">Describe a goal. The agent plans, calls tools and shows every step here.</string>
+    <string name="agent_tools">Tools</string>
+    <string name="agent_resume">Resume</string>
+    <string name="agent_result">Result</string>
+    <string name="agent_confirm_hint">The agent wants to run a tool that can change something.</string>
+
+    <!-- Benchmark -->
+    <string name="bench_device_title">Real-device report</string>
+    <string name="bench_measure">Measure device</string>
+    <string name="bench_copy">Copy report</string>
+    <string name="bench_copied">Copied</string>
+    <string name="bench_copied_toast">Report copied to the clipboard</string>
+    <string name="bench_llm_title">LLM benchmark</string>
+    <string name="bench_run">Run NPU / GPU / CPU</string>
+    <string name="bench_chart_title">Speed by backend</string>
+    <string name="bench_metric_decode">Decode</string>
+    <string name="bench_metric_prefill">Prefill</string>
+    <string name="bench_metric_ttft">TTFT</string>
+    <string name="bench_no_results">No results yet. Load a model and run the benchmark.</string>
+    <string name="bench_avg">avg</string>
+    <string name="bench_history">History</string>
+
+    <!-- Settings -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_inference">Downloads and inference</string>
+    <string name="settings_agent">Agent</string>
+    <string name="settings_privacy">Privacy and data</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="telemetry_note">Telemetry is local-only: metrics are shown on this device and never uploaded.</string>
+    <string name="wipe_message">This permanently deletes models, chats, agent traces, benchmarks, settings and the encryption key.</string>
+    <string name="wipe_confirm_word">DELETE</string>
 </resources>

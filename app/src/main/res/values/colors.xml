@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Exynos blue identity: window background before Compose draws (light) -->
+    <color name="lx_window_bg">#F2F5FC</color>
+</resources>
