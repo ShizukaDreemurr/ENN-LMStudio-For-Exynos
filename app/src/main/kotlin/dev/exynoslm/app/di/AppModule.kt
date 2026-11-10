@@ -17,6 +17,7 @@ import dev.exynoslm.runtime.EngineManager
 import dev.exynoslm.runtime.InferenceEngine
 import dev.exynoslm.runtime.FormatRouterEngine
 import dev.exynoslm.runtime.litertlm.LiteRtLmEngine
+import dev.exynoslm.runtime.llamacpp.LlamaCppEngine
 import dev.exynoslm.runtime.cpu.MediaPipeLlmEngine
 import dev.exynoslm.runtime.enn.EnnEngine
 import dev.exynoslm.runtime.enn.LiteRtNpuBridge
@@ -56,7 +57,7 @@ object AppModule {
         Backend.NPU_ENN to EnnEngine(if (dev.exynoslm.runtime.enn.BuildConfig.ENN_ENABLED) LiteRtNpuBridge(c) else StubEnnBridge()),
         // One router per backend: picks the engine by file format (.task -> MediaPipe, .litertlm -> LiteRT-LM, .gguf -> llama.cpp).
         Backend.GPU to FormatRouterEngine(Backend.GPU, listOf(GpuEngines.llm(c), LiteRtLmEngine(c, Backend.GPU))),
-        Backend.CPU to FormatRouterEngine(Backend.CPU, listOf(MediaPipeLlmEngine(c, Backend.CPU), LiteRtLmEngine(c, Backend.CPU))),
+        Backend.CPU to FormatRouterEngine(Backend.CPU, listOf(MediaPipeLlmEngine(c, Backend.CPU), LiteRtLmEngine(c, Backend.CPU), LlamaCppEngine(c))),
     )
 
     @Provides @Singleton fun selector(engines: Map<Backend, @JvmSuppressWildcards InferenceEngine>) = BackendSelector(engines)

@@ -63,6 +63,7 @@ dependencies {
     implementation(project(":runtime-gpu"))
     implementation(project(":runtime-enn"))
     implementation(project(":runtime-litertlm"))
+    implementation(project(":runtime-llamacpp"))
     implementation(project(":runtime-agent"))
 
     implementation(platform(libs.compose.bom))
