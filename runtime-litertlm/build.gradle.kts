@@ -7,7 +7,6 @@ android {
     compileSdk = 35
     defaultConfig { minSdk = 31; consumerProguardFiles("consumer-rules.pro") }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
-    kotlinOptions { jvmTarget = "17" }
 }
 dependencies {
     api(project(":core-runtime"))
@@ -15,3 +14,5 @@ dependencies {
     // LiteRT-LM Kotlin API (.litertlm models). Carries Kotlin 2.4 metadata; root build.gradle.kts adds -Xskip-metadata-version-check.
     api(libs.litertlm.android)
 }
+
+kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }

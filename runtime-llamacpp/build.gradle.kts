@@ -26,7 +26,6 @@ android {
         }
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
-    kotlinOptions { jvmTarget = "17" }
 }
 dependencies {
     api(project(":core-runtime"))
@@ -34,3 +33,5 @@ dependencies {
     implementation(project(":runtime-cpu"))
     implementation(libs.coroutines.android)
 }
+
+kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
