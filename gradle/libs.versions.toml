@@ -16,6 +16,7 @@ work = "2.10.0"
 hiltWork = "1.2.0"
 coil = "2.7.0"
 mediapipeGenai = "0.10.24"
+litertlm = "0.18.1"
 litert = "2.3.2"
 junit = "4.13.2"
 
@@ -49,6 +50,7 @@ work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work"
 core-ktx = { module = "androidx.core:core-ktx", version = "1.15.0" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 mediapipe-genai = { module = "com.google.mediapipe:tasks-genai", version.ref = "mediapipeGenai" }
+litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm" }
 litert = { module = "com.google.ai.edge.litert:litert", version.ref = "litert" }
 litert-gpu = { module = "com.google.ai.edge.litert:litert-gpu", version.ref = "litert" }
 androidx-test-runner = { module = "androidx.test:runner", version = "1.6.2" }

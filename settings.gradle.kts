@@ -16,5 +16,5 @@ include(":core-model", ":core-runtime", ":core-huggingface", ":runtime-agent")
 
 // Android modules. Pass -PjvmOnly=true to build/test only the JVM modules (e.g. on CI without SDK).
 if (!jvmOnly) {
-    include(":app", ":core-storage", ":core-telemetry", ":runtime-cpu", ":runtime-gpu", ":runtime-enn")
+    include(":app", ":core-storage", ":core-telemetry", ":runtime-cpu", ":runtime-litertlm",":runtime-gpu", ":runtime-enn")
 }
