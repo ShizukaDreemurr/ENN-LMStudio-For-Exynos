@@ -146,4 +146,26 @@
     <string name="telemetry_note">Telemetry is local-only: metrics are shown on this device and never uploaded.</string>
     <string name="wipe_message">This permanently deletes models, chats, agent traces, benchmarks, settings and the encryption key.</string>
     <string name="wipe_confirm_word">DELETE</string>
+    <!-- Hub: task filters and extras -->
+    <string name="hub_task_chat">Chat / LLM</string>
+    <string name="hub_task_embed">Embedding</string>
+    <string name="hub_task_asr">Speech</string>
+    <string name="hub_task_cls">Image class.</string>
+    <string name="hub_task_det">Detection</string>
+    <string name="hub_task_ocr">OCR</string>
+    <string name="hub_task_imggen">Image gen</string>
+    <string name="hub_gated_short">Gated</string>
+    <string name="hub_pause_cancel">Pause / Cancel</string>
+
+    <!-- My Models / Agent / Benchmark / Settings extras -->
+    <string name="models_storage">Storage</string>
+    <string name="agent_badge_ok">OK</string>
+    <string name="agent_badge_failed">Error</string>
+    <string name="agent_badge_dry_run">Dry run</string>
+    <string name="agent_badge_denied">Denied</string>
+    <string name="agent_final">Final answer</string>
+    <string name="agent_stopped">Stopped</string>
+    <string name="agent_thinking">Thinking…</string>
+    <string name="bench_load">Load</string>
+    <string name="settings_backend_auto">Auto</string>
 </resources>

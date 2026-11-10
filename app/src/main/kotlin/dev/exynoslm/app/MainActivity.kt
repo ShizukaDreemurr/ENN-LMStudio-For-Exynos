@@ -101,7 +101,7 @@ private fun Root() {
         ) {
             composable(Dest.Chat.route) { ChatScreen(onOpenModels = { go(Dest.Models) }) }
             composable(Dest.Hub.route) { HubScreen() }
-            composable(Dest.Models.route) { MyModelsScreen(onLoaded = { nav.navigate(Dest.Chat.route) }) }
+            composable(Dest.Models.route) { MyModelsScreen(onLoaded = { nav.navigate(Dest.Chat.route) }, onOpenHub = { go(Dest.Hub) }) }
             composable(Dest.Agent.route) { AgentScreen() }
             composable(Dest.Bench.route) { BenchScreen() }
             composable(Dest.Settings.route) { SettingsScreen() }

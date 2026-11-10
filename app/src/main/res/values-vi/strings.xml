@@ -142,4 +142,26 @@
     <string name="telemetry_note">Số liệu đo chỉ ở trên máy này: được hiển thị tại chỗ và không bao giờ được tải lên.</string>
     <string name="wipe_message">Thao tác này xoá vĩnh viễn mô hình, cuộc trò chuyện, nhật ký tác tử, kết quả đo, cài đặt và khoá mã hoá.</string>
     <string name="wipe_confirm_word">XOÁ</string>
+    <!-- Hub: task filters and extras -->
+    <string name="hub_task_chat">Trò chuyện / LLM</string>
+    <string name="hub_task_embed">Embedding</string>
+    <string name="hub_task_asr">Giọng nói</string>
+    <string name="hub_task_cls">Phân loại ảnh</string>
+    <string name="hub_task_det">Nhận diện vật thể</string>
+    <string name="hub_task_ocr">OCR</string>
+    <string name="hub_task_imggen">Tạo ảnh</string>
+    <string name="hub_gated_short">Cần cấp quyền</string>
+    <string name="hub_pause_cancel">Tạm dừng / Huỷ</string>
+
+    <!-- My Models / Agent / Benchmark / Settings extras -->
+    <string name="models_storage">Bộ nhớ</string>
+    <string name="agent_badge_ok">Xong</string>
+    <string name="agent_badge_failed">Lỗi</string>
+    <string name="agent_badge_dry_run">Chạy thử</string>
+    <string name="agent_badge_denied">Bị từ chối</string>
+    <string name="agent_final">Kết quả cuối</string>
+    <string name="agent_stopped">Đã dừng</string>
+    <string name="agent_thinking">Đang suy nghĩ…</string>
+    <string name="bench_load">Nạp</string>
+    <string name="settings_backend_auto">Tự động</string>
 </resources>
