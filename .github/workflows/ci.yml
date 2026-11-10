@@ -23,7 +23,10 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew :app:assembleDebug -PbuildNumber=${{ github.run_number }} --continue 2>&1 | tee build.log || {
-            echo "::group::COMPILE ERRORS"; grep -E "^e: |error:|What went wrong|Caused by|> " -A3 build.log | head -150; echo "::endgroup::"; exit 1; }
+            echo "::group::COMPILE ERRORS"; grep -E "^e: |error: |What went wrong|Caused by" -A6 build.log | grep -v "^> Task" | head -200; echo "::endgroup::"; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: build-log-${{ github.run_number }}, path: build.log }
       - name: Show native libs in APK
         run: unzip -l app/build/outputs/apk/debug/*.apk | grep -E "\.so$" || true
       - uses: actions/upload-artifact@v4
