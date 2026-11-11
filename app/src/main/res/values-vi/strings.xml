@@ -118,7 +118,7 @@
     <!-- Benchmark -->
     <string name="bench_device_title">Báo cáo trên máy thật</string>
     <string name="bench_measure">Đo máy</string>
-    <string name="bench_copy">Sao chép báo cáo</string>
+    <string name="bench_copy">Sao chép</string>
     <string name="bench_copied">Đã sao chép</string>
     <string name="bench_copied_toast">Đã sao chép báo cáo vào bộ nhớ tạm</string>
     <string name="bench_llm_title">Đo hiệu năng LLM</string>

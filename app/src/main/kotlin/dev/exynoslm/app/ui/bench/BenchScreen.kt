@@ -98,7 +98,7 @@ class BenchViewModel @Inject constructor(
             append(runCatching { report.npuBench(npuModel) }.getOrElse { "npu FAILED: $it\n" })
             append("--- LLM benchmarks (saved) ---\n")
             results.value.take(12).forEach { r ->
-                append("${r.backend} ${r.modelId.substringAfter(':')} load=${r.loadMs}ms ttft=${r.ttftMs}ms prefill=%.0f decode=%.1f tok/s pss=${r.peakPssMb}MB bat=-${r.batteryDropPct}%%\n"
+                append("${r.backend} ${r.modelId.substringAfter(':')} load=${r.loadMs}ms ttft=${r.ttftMs}ms prefill=%.0f decode=%.1f tok/s pss=${r.peakPssMb}MB bat=-${r.batteryDropPct.coerceAtLeast(0)}%%\n"
                     .format(r.prefillTokPerSec, r.decodeTokPerSec))
             }
             if (results.value.isEmpty()) append("(none — load a .task / .litertlm / .gguf model and press Run NPU / GPU / CPU)\n")
@@ -171,7 +171,11 @@ fun BenchScreen(vm: BenchViewModel = hiltViewModel()) {
     LaunchedEffect(copied) { if (copied) { delay(2200); copied = false } }
 
     // Latest result per backend (the DAO returns newest first), in NPU / GPU / CPU order.
-    val latest = results.groupBy { it.backend }.map { it.value.first() }
+    // Only compare backends on the most recently benchmarked model, and drop runs with no output
+    // (skipped/failed backends must not show as a 0 bar or drag the average down).
+    val latestModel = results.firstOrNull()?.modelId
+    val latest = results.filter { it.modelId == latestModel && it.decodeTokPerSec > 0.0 }
+        .groupBy { it.backend }.map { it.value.first() }
         .sortedBy { r -> BackendOrder.indexOf(r.backend).let { i -> if (i < 0) BackendOrder.size else i } }
     val raw = latest.map { r ->
         val v = when (metric) {
@@ -193,7 +197,7 @@ fun BenchScreen(vm: BenchViewModel = hiltViewModel()) {
     }
     val avgFmt = if (metric == BenchMetric.Ttft) "%.0f" else "%.1f"
     val avgPrefix = stringResource(R.string.bench_avg)
-    val avgText: String? = if (bars.isEmpty()) null else avgPrefix + " " + avgFmt.format(bars.map { it.value }.average())
+    val avgText: String? = if (bars.size < 2) null else avgPrefix + " " + avgFmt.format(bars.map { it.value }.average())
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -301,7 +305,7 @@ fun BenchScreen(vm: BenchViewModel = hiltViewModel()) {
                             Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 LxStatTile(stringResource(R.string.bench_load), "${r.loadMs} ms", Modifier.weight(1f))
                                 LxStatTile(stringResource(R.string.perf_pss), "${r.peakPssMb} MB", Modifier.weight(1f))
-                                LxStatTile(stringResource(R.string.perf_battery), "-${r.batteryDropPct}%", Modifier.weight(1f))
+                                LxStatTile(stringResource(R.string.perf_battery), if (r.batteryDropPct > 0) "-${r.batteryDropPct}%" else "0%", Modifier.weight(1f))
                             }
                         }
                     }
