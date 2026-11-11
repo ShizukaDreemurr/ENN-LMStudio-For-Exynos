@@ -74,7 +74,11 @@ class LiteRtLmEngine(
                 val lmBackend: LmBackend = when (backend) {
                     Backend.GPU -> LmBackend.GPU()
                     Backend.CPU -> LmBackend.CPU(threadCount = config.cpuThreads.takeIf { it > 0 })
-                    else -> return@withContext LoadResult.Failure("LiteRtLmEngine supports only CPU and GPU, not $backend", recoverable = false)
+                    // NPU needs a .litertlm compiled for this SoC's NPU (and the vendor dispatch libs in nativeLibraryDir).
+                    // Only try it for files whose name says so, so plain CPU/GPU models fall through quickly.
+                    Backend.NPU_ENN -> if (NPU_NAME.containsMatchIn(model.localPath.substringAfterLast('/')))
+                        LmBackend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir)
+                    else return@withContext LoadResult.Failure("not an NPU-compiled .litertlm (file name needs npu/e9965/exynos)")
                 }
                 val e = Engine(
                     EngineConfig(
@@ -194,6 +198,8 @@ class LiteRtLmEngine(
     override suspend fun unload() = withContext(dispatcher) { lock.withLock { unloadLocked() } }
 
     private fun unloadLocked() { runCatching { engine?.close() }; engine = null; model = null }
+
+    private companion object { val NPU_NAME = Regex("npu|e99\\d\\d|exynos|samsung", RegexOption.IGNORE_CASE) }
 
     override fun capabilities() = BackendCapabilities(
         backend = backend,

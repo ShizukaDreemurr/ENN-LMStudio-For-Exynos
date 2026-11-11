@@ -54,7 +54,7 @@ object AppModule {
      * (docs/ENN_INTEGRATION.md). Everything else picks it up automatically.
      */
     @Provides @Singleton fun engines(@ApplicationContext c: Context): Map<Backend, @JvmSuppressWildcards InferenceEngine> = mapOf(
-        Backend.NPU_ENN to EnnEngine(if (dev.exynoslm.runtime.enn.BuildConfig.ENN_ENABLED) LiteRtNpuBridge(c) else StubEnnBridge()),
+                Backend.NPU_ENN to FormatRouterEngine(Backend.NPU_ENN, listOf(EnnEngine(if (dev.exynoslm.runtime.enn.BuildConfig.ENN_ENABLED) LiteRtNpuBridge(c) else StubEnnBridge()), LiteRtLmEngine(c, Backend.NPU_ENN))),
         // One router per backend: picks the engine by file format (.task -> MediaPipe, .litertlm -> LiteRT-LM, .gguf -> llama.cpp).
         Backend.GPU to FormatRouterEngine(Backend.GPU, listOf(GpuEngines.llm(c), LiteRtLmEngine(c, Backend.GPU))),
         Backend.CPU to FormatRouterEngine(Backend.CPU, listOf(MediaPipeLlmEngine(c, Backend.CPU), LiteRtLmEngine(c, Backend.CPU), LlamaCppEngine(c))),
