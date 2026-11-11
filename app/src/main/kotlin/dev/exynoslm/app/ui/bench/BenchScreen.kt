@@ -101,7 +101,7 @@ class BenchViewModel @Inject constructor(
                 append("${r.backend} ${r.modelId.substringAfter(':')} load=${r.loadMs}ms ttft=${r.ttftMs}ms prefill=%.0f decode=%.1f tok/s pss=${r.peakPssMb}MB bat=-${r.batteryDropPct}%%\n"
                     .format(r.prefillTokPerSec, r.decodeTokPerSec))
             }
-            if (results.value.isEmpty()) append("(none — load a .task model and press Run NPU / GPU / CPU)\n")
+            if (results.value.isEmpty()) append("(none — load a .task / .litertlm / .gguf model and press Run NPU / GPU / CPU)\n")
         }
         reportText.value = text
         running.value = false

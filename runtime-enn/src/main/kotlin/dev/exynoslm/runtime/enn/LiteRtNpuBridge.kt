@@ -8,7 +8,6 @@ import com.google.ai.edge.litert.TensorBuffer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.lang.reflect.Method
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -20,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong
  *   CompiledModel(Accelerator.NPU) ─► libLiteRtDispatch_Samsung.so (APK, self-built v2.3.2)
  *                                  ─► libenn_public_api_cpp.so      (system, dlopen'ed)
  *
- * Only writeInt8/readInt8 stay reflective: the reference app probes them at runtime ("API not stably public").
+ * writeInt8/readInt8 are public in LiteRT 2.3.2 (confirmed on SM-S947B via the device report), so no reflection.
  */
 class LiteRtNpuBridge(
     private val context: Context,
@@ -68,7 +67,6 @@ class LiteRtNpuBridge(
         val model = CompiledModel.create(path, opts, e)
         val loaded = Loaded(model, model.createInputBuffers(), model.createOutputBuffers(), io)
         require(loaded.inputs.size == io.inputs.size && loaded.outputs.size == io.outputs.size) { "sidecar I/O count does not match model" }
-        if (io.inputs.any { it.dtype == "int8" }) requireNotNull(writeI8(loaded.inputs[0])) { "TensorBuffer.writeInt8 not found in this LiteRT build" }
         val id = ids.getAndIncrement(); models[id] = loaded
         return EnnBridge.ModelHandle(id)
     }
@@ -83,7 +81,7 @@ class LiteRtNpuBridge(
         synchronized(NPU_LOCK) { // reference app serialises every run; multi-thread rules are unverified
             val t0 = System.nanoTime()
             inputs.forEachIndexed { i, b ->
-                if (m.io.inputs[i].dtype == "int8") writeI8(m.inputs[i])!!.invoke(m.inputs[i], b.toByteArray())
+                if (m.io.inputs[i].dtype == "int8") m.inputs[i].writeInt8(b.toByteArray())
                 else m.inputs[i].writeFloat(b.toFloatArray())
             }
             val t1 = System.nanoTime()
@@ -91,7 +89,7 @@ class LiteRtNpuBridge(
             val t2 = System.nanoTime()
             outputs.forEachIndexed { i, o ->
                 o.clear()
-                if (m.io.outputs[i].dtype == "int8") (readI8(m.outputs[i])!!.invoke(m.outputs[i]) as ByteArray).let { o.put(it, 0, minOf(it.size, o.capacity())) }
+                if (m.io.outputs[i].dtype == "int8") m.outputs[i].readInt8().let { o.put(it, 0, minOf(it.size, o.capacity())) }
                 else m.outputs[i].readFloat().forEach { if (o.remaining() >= 4) o.putFloat(it) }
                 o.flip()
             }
@@ -129,8 +127,6 @@ class LiteRtNpuBridge(
         return EnnBridge.TensorSpec(s.name, s.shape.toIntArray(), s.dtype, s.shape.fold(1) { a, b -> a * b } * elem, s.scale, s.zero_point)
     }
 
-    private fun writeI8(b: TensorBuffer): Method? = b.javaClass.methods.firstOrNull { it.name == "writeInt8" && it.parameterTypes.contentEquals(arrayOf(ByteArray::class.java)) }
-    private fun readI8(b: TensorBuffer): Method? = b.javaClass.methods.firstOrNull { it.name == "readInt8" && it.parameterTypes.isEmpty() }
 
     private fun ByteBuffer.toByteArray(): ByteArray { val d = duplicate().apply { rewind() }; return ByteArray(d.remaining()).also { d.get(it) } }
     private fun ByteBuffer.toFloatArray(): FloatArray { val d = duplicate().apply { rewind() }.asFloatBuffer(); return FloatArray(d.remaining()).also { d.get(it) } }
